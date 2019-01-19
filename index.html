@@ -1,0 +1,576 @@
+﻿<!DOCTYPE html>
+<head lang="ja">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script type="text/javascript" src="js/introtzikas.js"></script>
+
+	<link rel="shortcut icon" href="favicon.ico">
+	<link rel="apple-touch-icon" href="favicon.ico">
+
+	<script type="text/javascript">
+	// http://easyramble.com/get-language-setting-by-javascript.html
+	var LANG_JA = (window.navigator.userLanguage || window.navigator.language || window.navigator.browserLanguage).substr(0,2) == "ja" ? 1 : 0;
+	var listMembers = [];
+	var listWorks = [];
+
+
+	var flagNoticeSuccess = 0;
+	var flagNoticeDanger = 0;
+
+	// http://bashalog.c-brains.jp/14/03/05-100000.php
+	function shuffleAry(ary) {
+		var i = ary.length;
+		while(i){
+			var j = Math.floor(Math.random()*i);
+			var t = ary[--i];
+			ary[i] = ary[j];
+			ary[j] = t;
+		}
+		return ary;
+	}
+
+
+	function hideNotice(target) {
+		$("#app-notice-" + target).hide(500);
+		if (target == "success") {
+			clearTimeout(flagNoticeSuccess);
+			flagNoticeSuccess = 0;
+		}
+		else if (target == "danger") {
+			clearTimeout(flagNoticeDanger);
+			flagNoticeDanger = 0;
+		}
+	}
+	function hideNotices() {
+		$("#app-notice-success").hide();
+		$("#app-notice-danger").hide();
+
+		if (flagNoticeSuccess != 0) {
+			clearTimeout(flagNoticeSuccess);
+		}
+
+		if (flagNoticeDanger != 0) {
+			clearTimeout(flagNoticeDanger);
+		}
+
+
+		flagNoticeSuccess = 0;
+		flagNoticeDanger = 0;
+	}
+	function noticeSuccess(text) {
+		if (flagNoticeSuccess != 0) {
+			hideNotices();
+		}
+		if (flagNoticeDanger) {
+			hideNotices();
+		}
+
+		// トップへスクロール
+		$('html,body').animate({scrollTop: 0}, 50, 'swing');
+
+		$("#app-notice-success-text").text(text);
+		$("#app-notice-success").show(500);
+		flagNoticeSuccess = setTimeout("hideNotice('success')", 3000);
+	}
+
+
+	function showAlert(text) {
+console.log(text);
+		if (flagNoticeDanger != 0) {
+			clearTimeout(flagNoticeDanger);
+			hideNotices();
+		}
+
+		// トップへスクロール
+		$('html,body').animate({scrollTop: 0}, 50, 'swing');
+
+		$("#app-notice-danger-text").text(text);
+		$("#app-notice-danger").show(500);
+		flagNoticeDanger = setTimeout("hideNotice('danger')", 3000);
+	}
+
+
+	// メンバー追加処理
+	function addMembername() {
+		var tmp = $("#app-input-add-membername").val();
+		if (tmp.length == 0) {
+			var mes;
+			if (LANG_JA) {
+				mes = "メンバー名が指定されていません。";
+			}
+			else {
+				mes = "Membername is unjust.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+		else if (tmp.length > 200) {
+			var mes;
+			if (LANG_JA) {
+				mes = "メンバー名が長すぎます。";
+			}
+			else {
+				mes = "Membername is unjust.";
+			}
+
+
+			showAlert(mes);
+			return;
+		}
+
+		// すでに登録されているのと同じ名前があるかどうかチェック
+		var dbc = $.inArray(tmp, listMembers);
+		if (dbc != -1) {
+			// 同じ名前
+			var mes;
+			if (LANG_JA) {
+				mes = tmp + " という名前の人はすでに存在します。";
+			}
+			else {
+				mes = tmp + " has already been registered.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+
+
+		if (flagNoticeSuccess != 0) {
+			clearTimeout(flagNoticeSuccess);
+			hideNotices();
+		}
+
+
+		// 登録処理
+		listMembers.push(tmp);
+		$("#app-input-add-membername").val(""); // 初期化
+
+
+		var mes;
+		if (LANG_JA) {
+			mes = "メンバーの追加に成功しました。";
+		}
+		else {
+			mes = "Add member complete.";
+		}
+		noticeSuccess(mes);
+
+
+		// list に追加
+		$("#app-display-list-member").prepend("<li class='list-group-item app-list-member'>" + tmp + "<span class='pull-right' style='color: red;' onClick='delMember(\"" + tmp + "\")'>X</span></li>");
+		return;
+	}
+
+	// 誤登録メンバー削除処理
+	function delMember(name) {
+		var tmp = $.inArray(name, listMembers);
+		if (tmp == -1) {
+			// 不存在
+			var mes;
+			if (LANG_JA) {
+				mes = "削除対象となったメンバーは存在しません。";
+			}
+			else {
+				mes = "Can't delete member.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+ 
+		// 配列から削除
+		listMembers.splice(tmp, 1);
+		// 配列の情報を基にして画面表示を再構成
+		$(".app-list-member").remove();
+
+		for (var i = 0, len = listMembers.length; i < len; i++) {
+			tmp = listMembers[i];
+			$("#app-display-list-member").prepend("<li class='list-group-item app-list-member'>" + tmp + "<span class='pull-right' style='color: red;' onClick='delMember(\"" + tmp + "\")'>X</span></li>");
+		}
+
+		var mes;
+		if (LANG_JA) {
+			mes = "メンバー " + name + " を削除しました。";
+		}
+		else {
+			mes = "Member " + name + " has deleted.";
+		}
+		noticeSuccess(mes);
+		return;
+	}
+
+
+	function addWorkname() {
+		var tmp = $("#app-input-add-workname").val();
+		if (tmp.length == 0) {
+			var mes;
+			if (LANG_JA) {
+				mes = "グループ名が指定されていません。";
+			}
+			else {
+				mes = "Group name is unjust.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+		else if (tmp.length > 200) {
+			var mes;
+			if (LANG_JA) {
+				mes = "グループ名が長すぎます。";
+			}
+			else {
+				mes = "Group name  is unjust.";
+			}
+
+
+			showAlert(mes);
+			return;
+		}
+
+
+		// すでに登録されているのと同じ名前があるかどうかチェック
+		var dbc = $.inArray(tmp, listWorks);
+		if (dbc != -1) {
+			// 同じ名前
+			var mes;
+			if (LANG_JA) {
+				mes = tmp + " というグループ名はすでに存在します。";
+			}
+			else {
+				mes = tmp + " has already been registered.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+
+
+		if (flagNoticeSuccess != 0) {
+			clearTimeout(flagNoticeSuccess);
+			hideNotices();
+		}
+
+
+		// 登録処理
+		listWorks.push(tmp);
+		$("#app-input-add-workname").val(""); // 初期化
+
+
+		var mes;
+		if (LANG_JA) {
+			mes = "グループ名の追加に成功しました。";
+		}
+		else {
+			mes = "Add work complete.";
+		}
+		noticeSuccess(mes);
+
+
+		// list に追加
+		$("#app-display-list-work").prepend("<li class='list-group-item app-list-work'>" + tmp + "<span class='pull-right' style='color: red;' onClick='delWork(\"" + tmp + "\")'>X</span></li>");
+		return;
+	}
+	// 誤登録された仕事を除去 
+	function delWork(name) {
+		var tmp = $.inArray(name, listWorks);
+		if (tmp == -1) {
+			// 不存在
+			var mes;
+			if (LANG_JA) {
+				mes = "削除対象となったグループは存在しません。";
+			}
+			else {
+				mes = "Can't delete group.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+ 
+		// 配列から削除
+		listWorks.splice(tmp, 1);
+		// 配列の情報を基にして画面表示を再構成
+		$(".app-list-work").remove();
+
+		for (var i = 0, len = listWorks.length; i < len; i++) {
+			tmp = listWorks[i];
+			$("#app-display-list-work").prepend("<li class='list-group-item app-list-work'>" + tmp + "<span class='pull-right' style='color: red;' onClick='delWork(\"" + tmp + "\")'>X</span></li>");
+		}
+
+
+		var mes;
+		if (LANG_JA) {
+			mes = "グループ " + name + " を削除しました。";
+		}
+		else {
+			mes = "Group " + name + " has deleted.";
+		}
+		noticeSuccess(mes);
+		return;
+	}
+
+
+	// 仕事振り分け画面を表示
+	function createGroups() {
+		if (listMembers.length == 0) {
+			var mes;
+			if (LANG_JA) {
+				mes = "メンバーが存在しないため、グループ分けができませんでした。";
+			}
+			else {
+				mes = "Member does not exist. Can't crate group.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+		if (listWorks.length == 0) {
+			if (LANG_JA) {
+				mes = "グループが存在しないため、グループ分けができませんでした。";
+			}
+			else {
+				mes = "Work does not exist. Can't crate group.";
+			}
+
+			showAlert(mes);
+			return;
+		}
+
+
+		// 既存の入力画面を除去
+		hideNotices();
+		$("#page-top").hide();
+		$().introtzikas({
+			line: '#E0FFE0', //ラインの色
+			speedwidth: 300, //ラインの移動スピード
+			speedheight: 500, //開くスピード
+			bg: '#9999AA' //背景の色
+		});
+
+
+		var tmpArray = [];
+		// 配列のシャッフル
+		var tlW = listWorks, tlM = listMembers;
+		tlW = shuffleAry(tlW);
+		tlM = shuffleAry(tlM);
+
+		// 各仕事に従事する人名を格納するリスト
+		for (var i = 0, len = tlW.length; i < len; i++) {
+			tmpArray[i] = new Array();
+		}
+
+
+		// メンバーの数よりも仕事の数が多い場合
+		// （１）複数の仕事を掛け持ち
+		// （２）仕事なしの人がいても良い
+		// 今回は、（１）の立場をとる。
+		if (tlM.length < tlW.length) {
+			// 参加者がいないグループができることを許可する。
+			showAlert("Work over member..");
+		}
+
+
+		for (var i = 0, len = tlM.length, lenJ = tlW.length; i < len; i++) {
+			tmpArray[i % lenJ].push(tlM[i]);
+		}
+
+
+/*		for (var i = 0, len = tmpArray.length; i < len; i++) {
+			var tmp = "";
+			for (var j = 0, lenJ = tmpArray[i].length; j < lenJ; j++) {
+				tmp += tmpArray[i][j] + ",";
+			}
+			console.log(tmp);
+		}*/
+
+
+		$(".app-display-group-panel").remove();
+		for (var i = 0, len = tmpArray.length; i < len; i++) {
+			var tmp = "<div class='panel panel-default app-display-group-panel'><div class='panel-heading'>" + tlW[i] + "</div>";
+			tmp += "<div class='panel-body'><span class='list-group'>";
+			for (var j = 0, lenJ = tmpArray[i].length; j < lenJ; j++) {
+				tmp += "<span class='list-group-item'>" + tmpArray[i][j] + "</span>";
+			}
+
+			tmp += "</span></div></div>";
+			$("#app-display-result").prepend(tmp);
+		}
+
+
+		// 結果表示画面を表示
+		$("#page-result").show();
+	}
+
+
+	// トップ画面を再表示 初期化あり
+	function gotoTop() {
+		$("#page-top").hide();
+		$("#page-result").hide();
+
+
+		$().introtzikas({
+			line: '#E0FFE0', //ラインの色
+			speedwidth: 500, //ラインの移動スピード
+			speedheight: 500, //開くスピード
+			bg: '#9999AA' //背景の色
+		});
+		$("#page-top").show();
+	}
+
+
+	$(document).ready(function() {
+		$().introtzikas({
+			line: '#E0FFE0', //ラインの色
+			speedwidth: 1000, //ラインの移動スピード
+			speedheight: 500, //開くスピード
+			bg: '#9999AA' //背景の色
+		});
+
+
+		$("#app-btn-add-membername").on("click", addMembername);
+		$("#app-btn-add-workname").on("click", addWorkname);
+
+		$("#app-btn-crate").on("click", createGroups);
+		$("#app-btn-goto-top").on("click", gotoTop);
+
+
+		if (LANG_JA) {
+			$("#app-btn-add-membername").text("追加");
+			$("#app-btn-add-workname").text("追加");
+
+			$("#app-btn-crate").text("グループ分け実行");
+		}
+	});
+	</script>
+
+
+	<style>
+	body {
+		-webkit-text-size-adjust: 100%;
+	}
+
+	#title-back {
+		padding-top: 40px;
+		padding-bottom: 40px;
+		margin-bottom: 20px;
+
+		background:url(img/bg.jpg) center no-repeat;
+		background-size: cover;
+
+		text-align: center;
+	}
+
+	#footer {
+		text-align: center;
+	}
+
+	.app-notice {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
+	}
+	.clear {
+		clear: left;
+		clear: right;
+	}
+	</style>
+
+
+	<title>Groupinger</title>
+</head>
+<body>
+	<div id="title-back">
+		<!-- notice 用 -->
+		<div id="app-notice-success" class="alert alert-success app-notice" style="display: none;">
+			<p id="app-notice-success-text"></p>
+		</div>
+		<div id="app-notice-danger" class="alert alert-danger app-notice" style="display: none;">
+			<p id="app-notice-danger-text"></p>
+		</div>
+
+
+		<div class="clear" style="display: none;"></div>
+		<div class="container">
+			<h1 style="color: #DDFFDD;"><span style="background: #000000;">Groupinger</span></h1>
+			<p style="color: #CCFFCC;"><span style="background: #000000;">グループ分けアプリ</span></p>
+		</div>
+	</div>
+
+
+<div id="page-top" class="container">
+	<div class="row">
+		<div class="col-lg-6">
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<p style="font-size: 24px;">Controller</p>
+					<div class="input-group">
+						<input type="text" id="app-input-add-membername" class="form-control" placeholder="Add member name">
+						<span class="input-group-btn">
+							<button id="app-btn-add-membername" class="btn btn-default" type="button">Add</button>
+						</span>
+					</div>
+					<div class="input-group">
+						<input type="text" id="app-input-add-workname" class="form-control" placeholder="Add group name">
+						<span class="input-group-btn">
+							<button id="app-btn-add-workname" class="btn btn-default" type="button">Add</button>
+						</span>
+					</div>
+
+					<hr>
+
+					<div class="btn-group btn-group-justified" role="group">
+						<div class="btn-group" role="group">
+							<button id="app-btn-crate" type="button" class="btn btn-success">Crate !</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-lg-6">
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<p style="font-size: 24px;">Member list</p>
+					<ul id="app-display-list-member" class="list-group">
+					</ul>
+
+					<hr>
+
+					<p style="font-size: 24px;">Group list</p>
+					<ul id="app-display-list-work" class="list-group">
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<div id="page-result" class="container" style="display: none;">
+	<span style="font-size: 24px;">Result</span>
+
+	<div id="app-display-result">
+	</div>
+
+	<div class="btn-group btn-group-justified" role="group">
+		<div class="btn-group" role="group">
+			<button id="app-btn-goto-top" type="button" class="btn btn-info">&#x3C;&#x3C; Back</button>
+		</div>
+	</div>
+</div>
+
+	<div id="footer">
+		<div class="container">
+			<h4>(C) 2016 Seki.</h4>
+		</div>
+	</div>
+</body>
+</html>
+
